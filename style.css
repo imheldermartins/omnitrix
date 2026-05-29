@@ -16,6 +16,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+
+    overflow-x: hidden;
 }
 
 #watch {
@@ -42,7 +44,7 @@ body {
     top: 50%;
     left: 0;
 
-    transform: translateX(calc(-50% - 20vw)) translateY(-50%) rotate(45deg) rotateY(30deg);
+    transform: translateX(calc(-50% - 50vw)) translateY(-50%) rotate(45deg) rotateY(30deg);
 }
 
 #watch::after {
@@ -59,7 +61,7 @@ body {
     top: 50%;
     right: 0;
 
-    transform: translateX(calc(50% + 20vw)) translateY(-50%) rotate(-45deg) rotateY(-30deg);
+    transform: translateX(calc(50% + 50vw)) translateY(-50%) rotate(-45deg) rotateY(-30deg);
 }
 
 .display-aliens {
@@ -72,6 +74,27 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+
+    /* =========================================
+       NOVO: ESTADO INICIAL DESATIVADO (ESCONDIDO)
+       ========================================= */
+    opacity: 0;
+    transform: scale(0.5); /* Começa pequenininho */
+    pointer-events: none; /* Evita que o usuário arraste fantasmas na tela */
+
+    touch-action: none;
+    
+    /* A mágica do efeito "Pop" ao abrir */
+    transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* =========================================
+   NOVO: CLASSE ATIVADORA (INJETADA VIA JS)
+   ========================================= */
+.display-aliens.open {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto; /* Reativa o toque/mouse */
 }
 
 .display-aliens::after {

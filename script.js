@@ -130,21 +130,74 @@ function updateCarousel() {
     });
 }
 
+let isRingActive = false; 
+let lastClosedTime = 0; // Previne que o click de fechar abra o relógio acidentalmente na mesma hora
+
+// Funções de Toggle do Ring
+function openRing() {
+    isRingActive = true;
+    displayElement.classList.add('open');
+}
+
+function closeRing() {
+    isRingActive = false;
+    displayElement.classList.remove('open');
+    lastClosedTime = Date.now(); // Marca a hora que fechou
+}
+
+// Escuta cliques em qualquer lugar da tela para ATIVAR o relógio
+document.addEventListener('click', () => {
+    // Só abre se estiver fechado E se passou mais de 300ms desde a última vez que fechou
+    if (!isRingActive && (Date.now() - lastClosedTime > 300)) {
+        openRing();
+    }
+});
+
 // ==========================================
-// EVENTOS DE DRAG
+// EVENTOS DE DRAG (Com Swipe Down para Fechar)
 // ==========================================
+let startY = 0; // NOVO: Precisamos rastrear o eixo Y agora
 
 function handleDragStart(e) {
+    if (!isRingActive) return; // Trava o drag se o ring estiver invisível
+
     isDragging = true;
     displayElement.classList.add('dragging'); 
+    
+    // Captura o X e o Y inicial
     startX = e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+    startY = e.type.includes('mouse') ? e.pageY : e.touches[0].clientY;
+    
     startPosition = currentPosition;
 }
 
+// function handleDragStart(e) {
+//     isDragging = true;
+//     displayElement.classList.add('dragging'); 
+//     startX = e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+//     startPosition = currentPosition;
+// }
+
 function handleDragMove(e) {
-    if (!isDragging) return;
+    // Adicionado o !isRingActive aqui também por segurança!
+    if (!isDragging || !isRingActive) return; 
+    
     const currentX = e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+    const currentY = e.type.includes('mouse') ? e.pageY : e.touches[0].clientY; // <-- FALTAVA ISSO
+    
     const deltaX = currentX - startX;
+    const deltaY = currentY - startY; // <-- FALTAVA ISSO
+
+    // ==========================================
+    // NOVA LÓGICA: SWIPE DOWN PARA FECHAR
+    // ==========================================
+    // Se o usuário puxou para BAIXO (> 80px) E o movimento vertical foi mais forte que o horizontal
+    if (deltaY > 80 && Math.abs(deltaY) > Math.abs(deltaX)) {
+        closeRing();
+        isDragging = false;
+        displayElement.classList.remove('dragging');
+        return; // Interrompe a função para não girar o disco
+    }
     
     currentPosition = startPosition - (deltaX * SENSITIVITY);
     
