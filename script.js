@@ -1,141 +1,178 @@
-// Array com os nomes dos aliens
-const aliens = [
-    "chama",
-    "diamante",
-    "besta",
-    "massa-cinzenta",
-    "quatro-bracos",
-    "xlr8",
-    "bala-de-canhao",
-    "insectoide",
-    "aquatico",
-    "ultra-t",
-    "cipo-selvagem",
-    "fantasmatico",
-    "franksben",
-    "glutao",
-    "idem",
-    "iguana-artica",
-    "lobisben",
-    "mumia",
-];
+/*
+const IMAGE_WIDTH = 512;
 
-// Índice atual do alien no carrossel
-let currentIndex = 0;
+const COLS_SIZE = 8;
+const ROWS_SIZE = 8;
 
-// Elementos HTML
-const watch = document.getElementById("watch");
-const arrows = document.querySelectorAll(".arrow");
+const TOTAL_ALIENS = ROWS_SIZE * COLS_SIZE;
 
-// Inicialização do display
-let isListening = false;
+const TILE_SIZE = IMAGE_WIDTH / COLS_SIZE;
 
-watch.addEventListener("click", () => {
-    setTimeout(() => {
-        watch.classList.remove("charged");
-    }, 700);
+const INDEX_TILE = 0;
 
-    arrows.forEach((arrow) => {
-        arrow.classList.add("active");
-        setTimeout(() => {
-            arrow.classList.add("to-select");
-        }, 500);
-    });
+// const col = INDEX_TILE % COLS_SIZE;
+// const row = Math.floor(INDEX_TILE / COLS_SIZE);
 
-    setTimeout(() => {
-        // Ativa/desativa o carrossel
-        isListening = !isListening;
-        if (isListening) {
-            updateCarousel(); // Atualiza o carrossel ao iniciar
-        }
-    }, 1000);
-});
+const posX = -(col * TILE_SIZE);
+const posY = -(row * TILE_SIZE);
 
-// Controlador para gerenciar os eventos de toque/mouse
-let isInteracting = false;
-let lastInteractionX = 0;
+const displayElement = document.querySelector('.display-aliens');
+const alienDiv = document.createElement('div');
+alienDiv.classList.add('alien-tile');
+displayElement.append(alienDiv);
 
-// Função para iniciar interação (mousedown/touchstart)
-function handleStart(event) {
-    if (!isListening) return;
+alienDiv.style.width = `${TILE_SIZE}px`;
+alienDiv.style.height = `${TILE_SIZE}px`;
+alienDiv.style.backgroundPosition = `${posX}px ${posY}px`;
 
-    isInteracting = true;
+// alienDiv.classList.add('active'); // somente quanto ele estiver no topo
+*/
 
-    // Captura a posição inicial do toque ou clique
-    lastInteractionX = event.touches ? event.touches[0].clientX : event.clientX;
+const displayElement = document.querySelector('.display-aliens');
 
-    // Adiciona o listener de movimento
-    document.addEventListener(event.touches ? "touchmove" : "mousemove", handleMove);
-}
+const IMAGE_WIDTH = 512;
+const COLS_SIZE = 8;
+const ROWS_SIZE = 8;
+const TOTAL_ALIENS = ROWS_SIZE * COLS_SIZE;
+const TILE_SIZE = IMAGE_WIDTH / COLS_SIZE;
 
-// Função para capturar o movimento (mousemove/touchmove)
-function handleMove(event) {
-    if (!isInteracting) return;
+const RADIUS = '37.5vh'; 
+const ANGLE_STEP = 25; 
 
-    const currentX = event.touches ? event.touches[0].clientX : event.clientX;
-    const deltaX = currentX - lastInteractionX;
+const tiles = [];
 
-    if (Math.abs(deltaX) > 50) {
-        // Altera o alien com base na direção do movimento
-        changeAlien(deltaX > 0 ? -1 : 1);
-        console.log(`Índice atual do alien: ${currentIndex}`); // Printa o índice atual
-        lastInteractionX = currentX; // Atualiza a posição de interação
+let currentPosition = 0; 
+let isDragging = false;
+let startX = 0;
+let startPosition = 0;
+const SENSITIVITY = 0.015; 
+
+function initCarousel() {
+    displayElement.innerHTML = ''; 
+    
+    for (let i = 0; i < TOTAL_ALIENS; i++) {
+        const col = i % COLS_SIZE;
+        const row = Math.floor(i / COLS_SIZE);
+        const posX = -(col * TILE_SIZE);
+        const posY = -(row * TILE_SIZE);
+
+        const tile = document.createElement('div');
+        tile.classList.add('alien-tile');
+        tile.style.width = `${TILE_SIZE}px`;
+        tile.style.height = `${TILE_SIZE}px`;
+        tile.style.backgroundPosition = `${posX}px ${posY}px`;
+        
+        tile.style.opacity = '0';
+        tile.style.pointerEvents = 'none'; 
+        
+        displayElement.append(tile);
+        tiles.push(tile); 
     }
 }
 
-// Função para encerrar interação (mouseup/touchend)
-function handleEnd() {
-    isInteracting = false;
-
-    // Remove os listeners de movimento
-    document.removeEventListener("mousemove", handleMove);
-    document.removeEventListener("touchmove", handleMove);
-}
-
-// Adiciona os eventos de interação para mouse e toque
-document.addEventListener("mousedown", handleStart);
-document.addEventListener("touchstart", handleStart);
-document.addEventListener("mouseup", handleEnd);
-document.addEventListener("touchend", handleEnd);
-
-// Função para criar um elemento alien
-function createAlienElement(alienName) {
-    const alienContainer = document.createElement("div");
-    const alienView = document.createElement("div");
-    alienContainer.classList.add("alien--container");
-    alienView.setAttribute("id", "alien-view");
-    alienView.classList.add("active");
-
-    alienContainer.appendChild(alienView);
-
-    // const currentElement = document.getElementsByClassName("alien--container")[0];
-    // if (currentElement) {
-    //     currentElement.classList.remove("enter");
-    //     currentElement.classList.add("exit");
-    // }
-
-
-    const alien = document.createElement("div");
-    const currentAlien = `./assets/aliens/${alienName}.webp`;
-    alien.setAttribute("id", "alien-tile");
-    alien.style.backgroundImage = `url('${currentAlien}')`;
-    // alienContainer.classList.add("enter");
-    alienView.appendChild(alien);
-    return alienContainer;
-}
-
-// Função para atualizar o carrossel
 function updateCarousel() {
-    watch.appendChild(createAlienElement(aliens[currentIndex]));
+    tiles.forEach((tile, index) => {
+        let diff = index - currentPosition;
+        
+        // Loop infinito para sempre encontrar o caminho mais curto
+        while (diff > TOTAL_ALIENS / 2) diff -= TOTAL_ALIENS;
+        while (diff < -TOTAL_ALIENS / 2) diff += TOTAL_ALIENS;
+
+        const absDiff = Math.abs(diff);
+
+        // ==========================================
+        // CÁLCULO PARA TODOS
+        // ==========================================
+        
+        const angle = diff * ANGLE_STEP; 
+        
+        let scale = 1;
+        let opacity = 0;
+        let blur = 0;
+
+        if (absDiff <= 4.5) {
+            // DE VOLTA À GLÓRIA: O item no centro cresce e fica 100% visível!
+            if (absDiff <= 1) {
+                scale = 1.5 - (absDiff * 0.3); // O Alien ativo fica GIGANTE no topo
+            } else {
+                scale = 1.2 - ((absDiff - 1) * 0.08); // Os outros vão diminuindo nas laterais
+            }
+            
+            // Opacidade 1 no centro, sumindo gradativamente nas pontas
+            opacity = Math.max(0, 1 - (absDiff * 0.2)); 
+            
+            // Desfoque apenas para os que estão na posição 2 em diante
+            blur = absDiff >= 2 ? (absDiff - 1.5) * 2 : 0;
+        } else {
+            // Itens da parte de baixo da roda (escondidos perfeitamente)
+            opacity = 0;
+        }
+
+        // Blindagem do CSS e o bug da esquerda (${-angle}deg) devidamente aplicados
+        tile.style.setProperty(
+            'transform', 
+            `rotate(${angle}deg) translateY(-${RADIUS}) rotate(${-angle}deg) scale(${scale})`,
+            'important'
+        );
+        
+        tile.style.opacity = opacity.toString();
+        tile.style.filter = `blur(${blur}px)`;
+        tile.style.zIndex = Math.round(100 - (absDiff * 10));
+        
+        tile.style.pointerEvents = (opacity > 0.1) ? 'auto' : 'none';
+
+        // O Glow verde glorioso quando ele para exatamente no topo!
+        if (absDiff < 0.05 && !isDragging) {
+            tile.classList.add('active');
+        } else {
+            tile.classList.remove('active');
+        }
+    });
 }
 
-// Função para mudar o alien no carrossel
-function changeAlien(direction) {
-    currentIndex += direction;
+// ==========================================
+// EVENTOS DE DRAG
+// ==========================================
 
-    // Garante que o índice seja circular
-    if (currentIndex < 0) currentIndex = aliens.length - 1;
-    if (currentIndex >= aliens.length) currentIndex = 0;
+function handleDragStart(e) {
+    isDragging = true;
+    displayElement.classList.add('dragging'); 
+    startX = e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+    startPosition = currentPosition;
+}
+
+function handleDragMove(e) {
+    if (!isDragging) return;
+    const currentX = e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+    const deltaX = currentX - startX;
+    
+    currentPosition = startPosition - (deltaX * SENSITIVITY);
+    
+    if (currentPosition < 0) currentPosition += TOTAL_ALIENS;
+    currentPosition %= TOTAL_ALIENS;
 
     updateCarousel();
 }
+
+function handleDragEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    displayElement.classList.remove('dragging'); 
+    
+    currentPosition = Math.round(currentPosition);
+    if (currentPosition === TOTAL_ALIENS) currentPosition = 0;
+
+    updateCarousel(); 
+}
+
+displayElement.addEventListener('mousedown', handleDragStart);
+window.addEventListener('mousemove', handleDragMove);
+window.addEventListener('mouseup', handleDragEnd); 
+window.addEventListener('mouseleave', handleDragEnd);
+
+displayElement.addEventListener('touchstart', handleDragStart, { passive: false });
+window.addEventListener('touchmove', handleDragMove, { passive: false });
+window.addEventListener('touchend', handleDragEnd);
+
+initCarousel();
+updateCarousel();

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+    <title>Omnitrix</title>
+</head>
+<style>
+    :root {
+        --charged: #0f0;
+        --discharged: #f00;
+        --primary: #000;
+        --secondary: #eee;
+
+        --tile-size: 100%;
+        /* Tamanho do "tile" do alien */
+        --transition-duration: 0.6s;
+        /* Duração da transição */
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: var(--primary);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .charged {
+        background-color: var(--charged);
+    }
+
+    .watch--container {
+        flex: 1;
+        width: 100%;
+        height: 100vh;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .watch--circle {
+        position: relative;
+        max-width: 100vw;
+        width: 100vh;
+        border-radius: 50%;
+    }
+
+    .arrow,
+    .arrow-l-ref,
+    .arrow-r-ref {
+        position: absolute;
+        top: 0;
+        width: 0;
+        height: 0;
+        border-style: solid;
+
+        transition: all ease-in 1s;
+    }
+
+    .arrow-r {
+        transform: translateX(15%);
+        right: 0;
+        border-width: 50vh 50vw 50vh 0;
+        border-color: transparent var(--primary) transparent transparent;
+    }
+
+    .arrow-l {
+        transform: translateX(-15%);
+        left: 0;
+        border-width: 50vh 0 50vh 50vw;
+        border-color: transparent transparent transparent var(--primary);
+    }
+
+    .arrow-l-ref {
+        transform: translateX(-115%);
+        left: 0;
+        border-width: 50vh 50vw 50vh 0;
+        border-color: transparent var(--primary) transparent transparent;
+    }
+
+    .arrow-r-ref {
+        transform: translateX(115%);
+        right: 0;
+        border-width: 50vh 0 50vh 50vw;
+        border-color: transparent transparent transparent var(--primary);
+    }
+
+    .arrow-l-ref:is(.active) {
+        transform: translateX(0);
+        left: 0;
+        border-width: 50vh 50vw 50vh 0;
+    }
+
+    .arrow-r-ref:is(.active) {
+        transform: translateX(0);
+        right: 0;
+        border-width: 50vh 0 50vh 50vw;
+    }
+
+    .arrow-r:is(.to-select) {
+        border-color: transparent var(--charged) transparent transparent;
+    }
+
+    .arrow-l:is(.to-select) {
+        border-color: transparent transparent transparent var(--charged);
+    }
+
+    .arrow-l:is(.active) {
+        transform: translateX(100%);
+    }
+
+    .arrow-r:is(.active) {
+        transform: translateX(-100%);
+    }
+
+    .triangle-l {
+        transform: translateX(-50%);
+        left: 0;
+        border-width: 50vh 0 50vh 50vw;
+        border-color: transparent transparent transparent var(--secondary);
+    }
+
+    .triangle-r {
+        transform: translateX(50%);
+        right: 0;
+        border-width: 50vh 50vw 50vh 0;
+        border-color: transparent var(--secondary) transparent transparent;
+    }
+
+    .triangle-l:is(.active) {
+        transform: translateX(100%);
+        left: 0;
+        transition-delay: border-color 1.3s;
+        border-color: transparent transparent transparent var(--charged);
+    }
+
+    .triangle-r:is(.active) {
+        transform: translateX(-100%);
+        right: 0;
+        transition-delay: border-color 1.3s;
+        border-color: transparent var(--charged) transparent transparent;
+    }
+
+    .alien--container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        clip-path: polygon(50% 11%, 90% 50%, 50% 90%, 10% 50%);
+        overflow: hidden;
+        z-index: 5;
+
+        width: var(--tile-size);
+        height: var(--tile-size);
+    }
+
+    #alien-view {
+        transition: transform var(--transition-duration) ease-in-out;
+        transition-delay: transform 0.3s;
+    }
+
+    #alien-view:is(.active) {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+
+        background: var(--charged);
+    }
+
+    #alien-tile {
+        width: 100%;
+        height: 100%;
+        filter: saturate(0) contrast(100);
+        mix-blend-mode: darken;
+        background-image: url('./assets/aliens/quatro-bracos.webp');
+        background-size: cover;
+        /* Garante proporções da imagem */
+        background-repeat: no-repeat;
+        background-position: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    @keyframes enter {
+        from {
+            transform: translate(100%, -50%);
+        }
+
+        to {
+            transform: translate(0, -50%);
+        }
+    }
+
+    @keyframes exit {
+        from {
+            transform: translate(0, -50%);
+        }
+
+        to {
+            transform: translate(-100%, -50%);
+        }
+    }
+
+    .enter {
+        animation: enter var(--transition-duration) ease-in-out;
+    }
+
+    .exit {
+        animation: exit var(--transition-duration) ease-in-out;
+    }
+</style>
+
+<body>
+
+    <div id="watch" class="watch--container watch--circle charged">
+        <div class="arrow arrow-l"></div>
+        <div class="arrow arrow-r"></div>
+        <div class="arrow arrow-l-ref"></div>
+        <div class="arrow arrow-r-ref"></div>
+
+        <div class="arrow triangle-l"></div>
+        <div class="arrow triangle-r"></div>
+    </div>
+
+    <script>
+        // Array com os nomes dos aliens
+        const aliens = [
+            "chama",
+            "diamante",
+            "besta",
+            "massa-cinzenta",
+            "quatro-bracos",
+            "xlr8",
+            "bala-de-canhao",
+            "insectoide",
+            "aquatico",
+            "ultra-t",
+            "cipo-selvagem",
+            "fantasmatico",
+            "franksben",
+            "glutao",
+            "idem",
+            "iguana-artica",
+            "lobisben",
+            "mumia",
+        ];
+
+        // Índice atual do alien no carrossel
+        let currentIndex = 0;
+
+        // Elementos HTML
+        const watch = document.getElementById("watch");
+        const arrows = document.querySelectorAll(".arrow");
+
+        // Inicialização do display
+        let isListening = false;
+
+        watch.addEventListener("click", () => {
+            setTimeout(() => {
+                watch.classList.remove("charged");
+            }, 700);
+
+            arrows.forEach((arrow) => {
+                arrow.classList.add("active");
+                setTimeout(() => {
+                    arrow.classList.add("to-select");
+                }, 500);
+            });
+
+            setTimeout(() => {
+                // Ativa/desativa o carrossel
+                isListening = !isListening;
+                if (isListening) {
+                    updateCarousel(); // Atualiza o carrossel ao iniciar
+                }
+            }, 1000);
+        });
+
+        // Controlador para gerenciar os eventos de toque/mouse
+        let isInteracting = false;
+        let lastInteractionX = 0;
+
+        // Função para iniciar interação (mousedown/touchstart)
+        function handleStart(event) {
+            if (!isListening) return;
+
+            isInteracting = true;
+
+            // Captura a posição inicial do toque ou clique
+            lastInteractionX = event.touches ? event.touches[0].clientX : event.clientX;
+
+            // Adiciona o listener de movimento
+            document.addEventListener(event.touches ? "touchmove" : "mousemove", handleMove);
+        }
+
+        // Função para capturar o movimento (mousemove/touchmove)
+        function handleMove(event) {
+            if (!isInteracting) return;
+
+            const currentX = event.touches ? event.touches[0].clientX : event.clientX;
+            const deltaX = currentX - lastInteractionX;
+
+            if (Math.abs(deltaX) > 50) {
+                // Altera o alien com base na direção do movimento
+                changeAlien(deltaX > 0 ? -1 : 1);
+                console.log(`Índice atual do alien: ${currentIndex}`); // Printa o índice atual
+                lastInteractionX = currentX; // Atualiza a posição de interação
+            }
+        }
+
+        // Função para encerrar interação (mouseup/touchend)
+        function handleEnd() {
+            isInteracting = false;
+
+            // Remove os listeners de movimento
+            document.removeEventListener("mousemove", handleMove);
+            document.removeEventListener("touchmove", handleMove);
+        }
+
+        // Adiciona os eventos de interação para mouse e toque
+        document.addEventListener("mousedown", handleStart);
+        document.addEventListener("touchstart", handleStart);
+        document.addEventListener("mouseup", handleEnd);
+        document.addEventListener("touchend", handleEnd);
+
+        // Função para criar um elemento alien
+        function createAlienElement(alienName) {
+            const alienContainer = document.createElement("div");
+            const alienView = document.createElement("div");
+            alienContainer.classList.add("alien--container");
+            alienView.setAttribute("id", "alien-view");
+            alienView.classList.add("active");
+
+            alienContainer.appendChild(alienView);
+
+            // const currentElement = document.getElementsByClassName("alien--container")[0];
+            // if (currentElement) {
+            //     currentElement.classList.remove("enter");
+            //     currentElement.classList.add("exit");
+            // }
+
+
+            const alien = document.createElement("div");
+            const currentAlien = `./assets/aliens/${alienName}.webp`;
+            alien.setAttribute("id", "alien-tile");
+            alien.style.backgroundImage = `url('${currentAlien}')`;
+            // alienContainer.classList.add("enter");
+            alienView.appendChild(alien);
+            return alienContainer;
+        }
+
+        // Função para atualizar o carrossel
+        function updateCarousel() {
+            watch.appendChild(createAlienElement(aliens[currentIndex]));
+        }
+
+        // Função para mudar o alien no carrossel
+        function changeAlien(direction) {
+            currentIndex += direction;
+
+            // Garante que o índice seja circular
+            if (currentIndex < 0) currentIndex = aliens.length - 1;
+            if (currentIndex >= aliens.length) currentIndex = 0;
+
+            updateCarousel();
+        }
+
+    </script>
+</body>
+
+</html>
